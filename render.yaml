@@ -2,9 +2,12 @@
 #
 # This is not the Blueprint that deploys generated apps — that one lives at the
 # root of APPS_REPO and is written by app/blueprint.ts.
+#
+# Demo-Library already has a vibe-factory project, and a workspace can only
+# have one workflow with a given name. This fork uses a demo- prefix.
 
 projects:
-  - name: vibe-factory
+  - name: demo-vibe-factory
     environments:
       - name: production
         # Keep network isolation off. In an isolated environment, workflow task
@@ -14,17 +17,17 @@ projects:
           isolation: disabled
 
         # Secrets you enter once when the Blueprint is created, and rotate in
-        # one place. The gateway gets only vibe-factory-shared: the model key
-        # and the GitHub credential must never reach it.
+        # one place. The gateway gets only demo-vibe-factory-shared: the model
+        # key and the GitHub credential must never reach it.
         envVarGroups:
-          - name: vibe-factory-shared
+          - name: demo-vibe-factory-shared
             envVars:
               # The gateway starts workflow tasks with it. The workflows host
               # uses it for Sandboxes, the Render MCP server, Blueprint reads,
               # and the deletes of a deleted app's resources.
               - key: RENDER_API_KEY
                 sync: false
-          - name: vibe-factory-workflow-secrets
+          - name: demo-vibe-factory-workflow-secrets
             envVars:
               - key: APPS_REPO
                 sync: false
@@ -44,12 +47,12 @@ projects:
                 sync: false
 
         databases:
-          - name: vibe-factory-db
+          - name: demo-vibe-factory-db
             plan: 0.1c-256mb
 
         services:
           - type: web
-            name: vibe-factory-gateway
+            name: demo-vibe-factory-gateway
             runtime: docker
             plan: 0.5c-512mb
             # Applies app/schema.sql before any new instance serves traffic.
@@ -58,7 +61,7 @@ projects:
             envVars:
               - key: DATABASE_URL
                 fromDatabase:
-                  name: vibe-factory-db
+                  name: demo-vibe-factory-db
                   property: connectionString
               # Generated once when the Blueprint creates the gateway and
               # preserved across later syncs.
@@ -71,16 +74,16 @@ projects:
               - key: RENDER_WORKFLOW_SLUG
                 fromService:
                   type: workflow
-                  name: vibe-factory-workflows
+                  name: demo-vibe-factory-workflows
                   property: slug
-              - fromGroup: vibe-factory-shared
+              - fromGroup: demo-vibe-factory-shared
 
           # Runs every task that app/host.ts registers. The model key and the
           # GitHub credential are set only here, never on the gateway. With no
           # repo field, it builds the repository that holds this Blueprint, so
           # a fork's workflow runs the fork's code.
           - type: workflow
-            name: vibe-factory-workflows
+            name: demo-vibe-factory-workflows
             runtime: node
             # A workflow must set its region. Task runs connect to the database
             # on the private network, and that network does not cross regions.
@@ -91,7 +94,7 @@ projects:
             envVars:
               - key: DATABASE_URL
                 fromDatabase:
-                  name: vibe-factory-db
+                  name: demo-vibe-factory-db
                   property: connectionString
-              - fromGroup: vibe-factory-shared
-              - fromGroup: vibe-factory-workflow-secrets
+              - fromGroup: demo-vibe-factory-shared
+              - fromGroup: demo-vibe-factory-workflow-secrets
